@@ -77,6 +77,7 @@ interface AddSourceDialogProps {
     onAddSymptoms: (date: string) => void;
     isSetUpVisionParser: boolean;
     isSetUpDocumentParser: boolean;
+    doclingOk?: boolean | null;
 }
 
 interface HealthDataItemProps {
@@ -208,6 +209,7 @@ const symptomsFields = (t: any): Field[] => [
 const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
                                                              isSetUpVisionParser,
                                                              isSetUpDocumentParser,
+                                                             doclingOk,
                                                              onFileUpload,
                                                              onAddSymptoms
                                                          }) => {
@@ -221,7 +223,9 @@ const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
         if (!e.target.files?.length) return;
 
         try {
-            if (!isSetUpVisionParser || !isSetUpDocumentParser) {
+            // Require at least Vision parser; Document parser is optional.
+            // If Docling is offline, allow upload in vision-only mode.
+            if (!isSetUpVisionParser) {
                 setShowSettingsAlert(true);
                 return;
             }
@@ -254,9 +258,14 @@ const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('addNewSource')}</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex flex-col gap-4 min-w-[300px]">
+                            <DialogTitle>{t('addNewSource')}</DialogTitle>
+                            </DialogHeader>
+                            <div className="flex flex-col gap-4 min-w-[300px]">
+                        {doclingOk === false && (
+                            <div className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-800">
+                                Docling (OCR) niedostępny — plik zostanie przetworzony w trybie vision‑only.
+                            </div>
+                        )}
                         <label
                             htmlFor="file-upload"
                             className={cn(
@@ -1384,6 +1393,7 @@ export default function SourceAddScreen() {
                         <AddSourceDialog
                             isSetUpVisionParser={visionParser !== undefined && visionParserModel !== undefined && (!visionParserApiKeyRequired || visionParserApiKey.length > 0)}
                             isSetUpDocumentParser={documentParser !== undefined && documentParserModel !== undefined && (!documentParserApiKeyRequired || documentParserApiKey.length > 0)}
+                            doclingOk={doclingOk}
                             onFileUpload={handleFileUpload}
                             onAddSymptoms={handleAddSymptoms}/>
                         <div className="flex-1 overflow-y-auto">

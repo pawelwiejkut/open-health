@@ -141,17 +141,35 @@ async function inference(inferenceOptions: InferenceOptions) {
     const visionParserModel = visionParserModels.find(e => e.id === visionParserOptions.model)
     if (!visionParserModel) throw new Error('Invalid vision parser model')
 
-    // Process the batch inputs
+    // Helper: timeout wrapper
+    const withTimeout = async <T,>(p: Promise<T>, ms: number): Promise<T> => {
+        return await Promise.race<T>([
+            p,
+            new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+        ])
+    }
+
+    // Process the batch inputs with timeout and smaller concurrency to avoid long hangs
     const batchData = await processBatchWithConcurrency(
         batchInputs,
-        async (input) => visionParser.parse({
-            model: visionParserModel,
-            messages: messages,
-            input: input,
-            apiKey: visionParserOptions.apiKey,
-            apiUrl: visionParserOptions.apiUrl,
-        }),
-        4
+        async (input) => {
+            try {
+                return await withTimeout(
+                    visionParser.parse({
+                        model: visionParserModel,
+                        messages: messages,
+                        input: input,
+                        apiKey: visionParserOptions.apiKey,
+                        apiUrl: visionParserOptions.apiUrl,
+                    }),
+                    25000
+                )
+            } catch (e) {
+                // Fallback to empty result for this page
+                return {date: '', name: '', test_result: {}} as HealthCheckupType
+            }
+        },
+        2
     )
 
     console.log('BatchData from vision parser:', JSON.stringify(batchData, null, 2))

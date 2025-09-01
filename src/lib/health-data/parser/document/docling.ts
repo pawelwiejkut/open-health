@@ -89,7 +89,7 @@ export class DoclingDocumentParser extends BaseDocumentParser {
         formData.append('do_ocr', 'true');
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
         
         let response;
         try {
@@ -161,7 +161,7 @@ export class DoclingDocumentParser extends BaseDocumentParser {
         formData.append('do_ocr', 'true');
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
         
         let response;
         try {
