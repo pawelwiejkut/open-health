@@ -1,0 +1,191 @@
+{
+  "HomePage": {},
+  "Chat": {
+    "inputPlaceholder": "Napisz swoją wiadomość..."
+  },
+  "Feedback": {
+    "helpMessage": "Pomóż OpenHealth rozwiązywać problemy zdrowotne dla Ciebie i innych",
+    "shareFeedback": "Przekaż opinię",
+    "needHelpWithYourIssue": "Potrzebujesz pomocy?",
+    "askADoctor": "Zapytaj lekarza"
+  },
+  "ChatSideBar": {
+    "sources": "Źródła",
+    "numberOfFiles": "{value, number} plików",
+    "countOfTokens": "{value, number} tokenów",
+    "viewAggregatedSources": "Zobacz zagregowane źródła",
+    "aggregatedSources": "Zagregowane źródła",
+    "manageSources": "Zarządzaj źródłami",
+    "newChat": "Nowy czat",
+    "copy": "Kopiuj",
+    "download": "Pobierz",
+    "chatDeleteTitle": "Usuń czat",
+    "chatDeleteMessage": "Czy na pewno chcesz usunąć ten czat?",
+    "chatDeleteMessageDetail": "Tej operacji nie można cofnąć.",
+    "cancel": "Anuluj",
+    "delete": "Usuń"
+  },
+  "ChatSettingSideBar": {
+    "modelSettings": "Ustawienia modelu",
+    "systemPrompt": "System prompt",
+    "assistantMode": "Tryb asystenta",
+    "addAssistant": "Dodaj asystenta",
+    "selectModel": "Wybierz model",
+    "selectCompany": "Wybierz dostawcę",
+    "noModelsFound": "Brak modeli.",
+    "enterApiKey": "Wprowadź klucz API",
+    "show": "Pokaż",
+    "hide": "Ukryj"
+  },
+  "AssistantPage": {
+    "backToChat": "Wróć do czatu",
+    "addNewAssistant": "Dodaj nowego asystenta",
+    "createCustomAssistant": "Utwórz własnego asystenta z własnymi ustawieniami",
+    "assistantName": "Nazwa asystenta",
+    "assistantNamePlaceholder": "np. Asystent medyczny",
+    "description": "Opis",
+    "descriptionPlaceholder": "Opisz, co robi ten asystent...",
+    "descriptionHelp": "Podaj szczegółowy opis celu i możliwości asystenta.",
+    "isPublic": "Udostępnij asystenta publicznie",
+    "isPublicHelp": "Jeśli publiczny, inni będą mogli go używać.",
+    "systemPrompt": "System prompt",
+    "systemPromptPlaceholder": "Wprowadź system prompt...",
+    "systemPromptHelp": "System prompt definiuje zachowanie i wiedzę asystenta.",
+    "context": "Kontekst",
+    "contextPlaceholder": "Dodaj kontekst dla asystenta...",
+    "contextHelp": "Dodatkowy kontekst pomaga w zrozumieniu potrzeb.",
+    "cancel": "Anuluj",
+    "createAssistant": "Utwórz asystenta"
+  },
+  "SourceManagement": {
+    "title": "Zarządzanie źródłami",
+    "addSource": "Dodaj źródło",
+    "addNewSource": "Dodaj nowe źródło",
+    "personalInfo": "Dane osobowe",
+    "parsingSettings": "Ustawienia parsowania",
+    "parsingSettingsDescription": "Modele wizji i OCR są używane razem dla lepszego wyniku.",
+    "visionModel": "Model wizji",
+    "visionModelDescription": "Używaj tylko modeli z funkcjami wizji.",
+    "documentModel": "Model dokumentu",
+    "documentModelDescription": "Docling to otwartoźródłowy parser działający lokalnie.",
+    "documentModelDoclingGithub": "Github",
+    "documentModelUpstage": "Upstage",
+    "documentModelUpstageDescription": "Upstage w naszych testach wypadł najlepiej.",
+    "documentModelUpstageDescription2": "oferuje 10$ darmowego kredytu dla nowych użytkowników (bez karty).",
+    "name": "Imię i nazwisko",
+    "birthdate": "Data urodzenia",
+    "height": "Wzrost",
+    "weight": "Waga",
+    "bloodType": "Grupa krwi",
+    "familyHistory": "Wywiad rodzinny",
+    "select": "Wybierz",
+    "extractedData": "Wyodrębnione dane",
+    "update": "Zaktualizuj",
+    "uploadFiles": "Wyślij pliki",
+    "uploadFilesDescription": "Dodaj obrazy lub pliki PDF.",
+    "uploadSymptoms": "Nowe objawy",
+    "uploadSymptomsDescription": "Zapisz dzisiejsze objawy.",
+    "date": "Data",
+    "endDate": "Data zakończenia",
+    "description": "Opis",
+    "symptoms": "Objawy",
+    "selectModel": "Wybierz model",
+    "apiKey": "Klucz API",
+    "enterYourAPIKey": "Wprowadź swój klucz API",
+    "enterYourAPIUrl": "Wprowadź URL API"
+  },
+  "DynamicForm": {
+    "selectPlaceholder": "Wybierz..."
+  },
+  "LoginPage": {
+    "username": "Nazwa użytkownika",
+    "usernamePlaceholder": "Wpisz nazwę użytkownika",
+    "password": "Hasło",
+    "passwordPlaceholder": "••••••••",
+    "signIn": "Zaloguj się",
+    "needSignUp": "Nie masz konta? Zarejestruj się",
+    "alreadyHaveAccount": "Masz już konto? Zaloguj się",
+    "signUp": "Utwórz konto",
+    "invalidEmailFormat": "Nieprawidłowy format e-mail"
+  },
+  "Onboarding": {
+    "introduction": {
+      "title": "Health Solver",
+      "subtitle": "od OpenHealth",
+      "description": "Masz problemy zdrowotne bez rozwiązania?\nPozwól AI przeanalizować Twoje dane",
+      "privacyNotice": "Twoje dane będą użyte wyłącznie do rozwiązania problemów zdrowotnych.",
+      "runLocally": "Możesz uruchomić lokalnie",
+      "here": "tutaj"
+    },
+    "healthConcerns": {
+      "title": "Problemy zdrowotne",
+      "description": "Opisz szczegółowo swoje obecne dolegliwości",
+      "placeholder": "Przykład:\n- Jakie objawy odczuwasz?\n- Kiedy się zaczęły?\n- Co je nasila?\n- Czy wcześniej występowały podobne objawy?",
+      "error": "Opisz proszę swoje problemy zdrowotne"
+    },
+    "personalInfo": {
+      "title": "Dane osobowe",
+      "description": "Pomóż nam lepiej Cię poznać",
+      "gender": {
+        "label": "Płeć",
+        "male": "Mężczyzna",
+        "female": "Kobieta",
+        "error": "Wybierz płeć"
+      },
+      "birthDate": {
+        "label": "Data urodzenia",
+        "error": "Podaj datę urodzenia"
+      },
+      "height": {
+        "label": "Wzrost",
+        "placeholder": {"cm": "170", "ft": "5.6"},
+        "error": "Podaj wzrost"
+      },
+      "weight": {
+        "label": "Waga",
+        "placeholder": {"kg": "65", "lb": "143"},
+        "error": "Podaj wagę"
+      },
+      "ethnicity": {
+        "label": "Pochodzenie",
+        "placeholder": "Wybierz pochodzenie",
+        "options": {
+          "east_asian": "Azjatyckie (Wsch.)",
+          "southeast_asian": "Azjatyckie (Płd.-Wsch.)",
+          "south_asian": "Azjatyckie (Południowe)",
+          "european": "Europejskie",
+          "middle_eastern": "Bliski Wschód / Afryka Płn.",
+          "african": "Afrykańskie",
+          "african_american": "Afroamerykańskie",
+          "pacific_islander": "Wysp Pacyfiku",
+          "native_american": "Rdzenni Amerykanie",
+          "hispanic": "Latynoskie",
+          "mixed": "Mieszane",
+          "other": "Inne"
+        },
+        "error": "Wybierz pochodzenie"
+      },
+      "country": {
+        "label": "Kraj",
+        "placeholder": "Wpisz nazwę kraju",
+        "error": "Wybierz kraj"
+      }
+    },
+    "medicalRecords": {
+      "title": "Dokumentacja medyczna",
+      "description": "Prześlij dokumentację dla lepszej analizy (opcjonalnie)",
+      "dragDrop": {
+        "title": "Przeciągnij i upuść pliki tutaj",
+        "or": "lub",
+        "browse": "Przeglądaj",
+        "supportedFormats": "Obsługiwane formaty: PDF, JPEG, PNG, DOC"
+      }
+    },
+    "analysis": {
+      "description": "AI analizuje Twoje dane zdrowotne, aby lepiej zrozumieć Twój stan i przygotować spersonalizowane wskazówki"
+    },
+    "navigation": {"back": "Wstecz", "next": "Dalej", "skip": "Pomiń"},
+    "healthSolver": {"message": "Powiedz o swoich problemach zdrowotnych"}
+  }
+}
+

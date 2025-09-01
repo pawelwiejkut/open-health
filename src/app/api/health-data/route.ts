@@ -80,6 +80,10 @@ export async function POST(
 
         // Save files
         if (file instanceof File) {
+            // Basic file size limit (25MB)
+            if (file.size > 25 * 1024 * 1024) {
+                return NextResponse.json({error: 'File too large (max 25MB)'}, {status: 413})
+            }
             const fileBuffer = Buffer.from(await file.arrayBuffer())
             const result = await fileTypeFromBuffer(fileBuffer)
             if (!result) return NextResponse.json({error: 'Failed to determine file type'}, {status: 400})
@@ -94,6 +98,7 @@ export async function POST(
                 const outputBuffer = await sharp(fileBuffer).png().toBuffer()
                 const filename = `${fileHash}.png`;
                 if (currentDeploymentEnv === 'local') {
+                    try { fs.mkdirSync('./public/uploads', {recursive: true}) } catch {}
                     fs.writeFileSync(`./public/uploads/${filename}`, outputBuffer)
                     filePath = `${process.env.NEXT_PUBLIC_URL}/api/static/uploads/${filename}`
                 } else {
@@ -109,6 +114,7 @@ export async function POST(
                 if (currentDeploymentEnv === 'local') {
                     const extension = file.name.split('.').pop()
                     const filename = `${fileHash}.${extension}`;
+                    try { fs.mkdirSync('./public/uploads', {recursive: true}) } catch {}
                     fs.writeFileSync(`./public/uploads/${filename}`, fileBuffer)
                     filePath = `${process.env.NEXT_PUBLIC_URL}/api/static/uploads/${filename}`
                 } else {
@@ -144,6 +150,10 @@ export async function POST(
             const finalVisionParserApiUrl = visionParserApiUrl ? 
                 (visionParserApiUrl as string) : 
                 process.env.OLLAMA_API_URL || 'http://localhost:11434'
+            // Validate URL scheme
+            if (!finalVisionParserApiUrl.startsWith('http://') && !finalVisionParserApiUrl.startsWith('https://')) {
+                return NextResponse.json({error: 'Invalid vision API URL'}, {status: 400})
+            }
             
             console.log('Vision parser config:', {
                 parser: visionParser,

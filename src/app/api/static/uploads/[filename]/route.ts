@@ -15,10 +15,12 @@ export async function GET(
     const file = await fs.readFile(filePath)
     // Convert Node Buffer to a proper ArrayBuffer slice
     const body = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength)
+    const ext = filename.split('.').pop()?.toLowerCase()
+    const contentType = ext === 'png' ? 'image/png' : ext === 'pdf' ? 'application/pdf' : 'application/octet-stream'
     return new Response(body as ArrayBuffer, {
         headers: {
-            'Content-Type': 'application/octet-stream',
-            'Content-Disposition': `attachment; filename=${filename}`
+            'Content-Type': contentType,
+            'Content-Disposition': `inline; filename="${filename}"`
         }
     })
 }

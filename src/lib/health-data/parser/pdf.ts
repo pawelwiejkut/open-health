@@ -294,6 +294,7 @@ async function documentToImages({file: filePath}: Pick<SourceParseOptions, 'file
     const imagePaths = []
     for (let i = 0; i < images.length; i++) {
         if (currentDeploymentEnv === 'local') {
+            try { fs.mkdirSync('./public/uploads', {recursive: true}) } catch {}
             fs.writeFileSync(`./public/uploads/${fileHash}_${i}.png`, Buffer.from(images[i].split(',')[1], 'base64'))
             imagePaths.push(`${process.env.NEXT_PUBLIC_URL}/api/static/uploads/${fileHash}_${i}.png`)
         } else {
