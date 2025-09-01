@@ -356,30 +356,31 @@ export async function parseHealthData(options: SourceParseOptions) {
         return {data: [healthCheckup], pages: [mergedTestResultPage], ocrResults: []}
     }
 
-    // prepare ocr results
-    const ocrResults = await documentOCR({
-        document: filePath,
-        documentParser: documentParser
-    })
+    try {
+        // prepare ocr results
+        const ocrResults = await documentOCR({
+            document: filePath,
+            documentParser: documentParser
+        })
 
-    // prepare parse results
-    await processBatchWithConcurrency(
-        imagePaths,
-        async (path) => documentParse({document: path, documentParser: documentParser}),
-        3
-    )
+        // prepare parse results
+        await processBatchWithConcurrency(
+            imagePaths,
+            async (path) => documentParse({document: path, documentParser: documentParser}),
+            3
+        )
 
-    // Merge the results
-    const baseInferenceOptions = {imagePaths, visionParser, documentParser}
-    const [
-        {finalHealthCheckup: resultTotal, mergedTestResultPage: resultTotalPages},
-        {finalHealthCheckup: resultText, mergedTestResultPage: resultTextPages},
-        {finalHealthCheckup: resultImage, mergedTestResultPage: resultImagePages}
-    ] = await Promise.all([
-        inference({...baseInferenceOptions, excludeImage: false, excludeText: false}),
-        inference({...baseInferenceOptions, excludeImage: false, excludeText: true}),
-        inference({...baseInferenceOptions, excludeImage: true, excludeText: false}),
-    ]);
+        // Merge the results
+        const baseInferenceOptions = {imagePaths, visionParser, documentParser}
+        const [
+            {finalHealthCheckup: resultTotal, mergedTestResultPage: resultTotalPages},
+            {finalHealthCheckup: resultText, mergedTestResultPage: resultTextPages},
+            {finalHealthCheckup: resultImage, mergedTestResultPage: resultImagePages}
+        ] = await Promise.all([
+            inference({...baseInferenceOptions, excludeImage: false, excludeText: false}),
+            inference({...baseInferenceOptions, excludeImage: false, excludeText: true}),
+            inference({...baseInferenceOptions, excludeImage: true, excludeText: false}),
+        ]);
 
     const resultDictTotal = resultTotal.test_result
     const resultDictText = resultText.test_result
@@ -452,6 +453,22 @@ export async function parseHealthData(options: SourceParseOptions) {
         test_result: mergedTestResult
     } as HealthCheckupType
 
-    console.log('FINAL RETURN DATA:', JSON.stringify({data: [healthCheckup], pages: [mergedPageResult]}, null, 2));
-    return {data: [healthCheckup], pages: [mergedPageResult], ocrResults: [ocrResults]}
+        console.log('FINAL RETURN DATA:', JSON.stringify({data: [healthCheckup], pages: [mergedPageResult]}, null, 2));
+        return {data: [healthCheckup], pages: [mergedPageResult], ocrResults: [ocrResults]}
+    } catch (error) {
+        console.warn('Document parser unavailable or failed, falling back to vision-only:', error)
+        const {finalHealthCheckup, mergedTestResultPage} = await inference({
+            imagePaths,
+            excludeImage: false,
+            excludeText: true,
+            visionParser
+        })
+        const healthCheckup = {
+            date: finalHealthCheckup.date || "",
+            name: finalHealthCheckup.name || "",
+            test_result: finalHealthCheckup.test_result || {}
+        } as HealthCheckupType
+        console.log('FINAL RETURN DATA (fallback vision-only):', JSON.stringify({data: [healthCheckup], pages: [mergedTestResultPage]}, null, 2));
+        return {data: [healthCheckup], pages: [mergedTestResultPage], ocrResults: []}
+    }
 }
