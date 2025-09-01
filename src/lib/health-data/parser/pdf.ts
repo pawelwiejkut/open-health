@@ -116,7 +116,10 @@ async function inference(inferenceOptions: InferenceOptions) {
         ...(!excludeImage && imageDataList ? {image_data: imageDataList[i]} : {})
     }))
 
-    // Generate Messages
+    // Generate Messages with multilingual support
+    const textContent = pageDataList && pageDataList.length > 0 ? 
+        pageDataList.map(page => page.page_content).join('\n') : '';
+    
     const messages = ChatPromptTemplate.fromMessages(getParsePrompt({excludeImage, excludeText}));
 
     // Select Vision Parser
@@ -143,23 +146,41 @@ async function inference(inferenceOptions: InferenceOptions) {
         4
     )
 
+    console.log('BatchData from vision parser:', JSON.stringify(batchData, null, 2))
+
     // Merge the results
-    const data: { [key: string]: HealthCheckupType } = batchData.reduce((acc, curr, i) => {
+    const data: { [key: string]: any } = batchData.reduce((acc, curr, i) => {
+        console.log(`Adding page_${i}:`, JSON.stringify(curr, null, 2))
         acc[`page_${i}`] = curr;
         return acc;
-    }, {} as { [key: string]: HealthCheckupType });
+    }, {} as { [key: string]: any });
 
-    // Merge Results
+    // Merge Results - collect ALL keys from actual data, not just schema keys
     const mergeInfo: { [key: string]: { pages: number[], values: any[] } } = {}
+    const allKeys = new Set<string>()
+    
+    // First collect all keys that actually exist in the data
+    for (let i = 0; i < numPages; i++) {
+        const healthCheckup = data[`page_${i}`]
+        console.log(`Page ${i} healthCheckup:`, JSON.stringify(healthCheckup, null, 2))
+        const healthCheckupTestResult = healthCheckup?.test_result
+        
+        if (healthCheckupTestResult && typeof healthCheckupTestResult === 'object') {
+            Object.keys(healthCheckupTestResult).forEach(key => allKeys.add(key))
+        }
+    }
+    
+    console.log('All keys found in data:', Array.from(allKeys))
 
-    for (const key of HealthCheckupSchema.shape.test_result.keyof().options) {
+    // Then process each key that was found
+    for (const key of allKeys) {
         const testFields = [];
         const testPages: number[] = [];
         for (let i = 0; i < numPages; i++) {
             const healthCheckup = data[`page_${i}`]
-            const healthCheckupTestResult = healthCheckup.test_result
+            const healthCheckupTestResult = healthCheckup?.test_result
 
-            if (healthCheckupTestResult.hasOwnProperty(key) && healthCheckupTestResult[key]) {
+            if (healthCheckupTestResult?.hasOwnProperty?.(key) && healthCheckupTestResult[key]) {
                 testFields.push(healthCheckupTestResult[key])
                 testPages.push(i)
             }
@@ -173,6 +194,9 @@ async function inference(inferenceOptions: InferenceOptions) {
     const mergedTestResult: { [key: string]: any } = {}
     const mergedTestResultPage: { [key: string]: { page: number } } = {}
 
+    console.log('MergeInfo keys:', Object.keys(mergeInfo));
+    console.log('MergeInfo content:', JSON.stringify(mergeInfo, null, 2));
+    
     // Merge the results
     for (const mergeInfoKey in mergeInfo) {
         const mergeTarget = mergeInfo[mergeInfoKey]
@@ -180,7 +204,10 @@ async function inference(inferenceOptions: InferenceOptions) {
         mergedTestResultPage[mergeInfoKey] = {
             page: mergeTarget.pages[0] + 1
         }
+        console.log(`Added to merged result: ${mergeInfoKey} = ${JSON.stringify(mergeTarget.values[0])}`);
     }
+    
+    console.log('Final mergedTestResult:', JSON.stringify(mergedTestResult, null, 2));
 
     let mergeData: any = {}
 
@@ -215,8 +242,17 @@ async function inference(inferenceOptions: InferenceOptions) {
  * @returns {Promise<string[]>} - List of image paths
  */
 async function documentToImages({file: filePath}: Pick<SourceParseOptions, 'file'>): Promise<string[]> {
-    const fileResponse = await fetch(filePath);
-    const fileBuffer = Buffer.from(await fileResponse.arrayBuffer())
+    let fileBuffer: Buffer;
+    
+    // Check if it's a local file path or URL
+    if (filePath.startsWith('./') || filePath.startsWith('/') || (!filePath.startsWith('http'))) {
+        // Local file path - use fs.readFileSync
+        fileBuffer = fs.readFileSync(filePath)
+    } else {
+        // URL - use fetch
+        const fileResponse = await fetch(filePath);
+        fileBuffer = Buffer.from(await fileResponse.arrayBuffer())
+    }
     const result = await fileTypeFromBuffer(fileBuffer)
     const fileHash = await getFileMd5(fileBuffer)
     if (!result) throw new Error('Invalid file type')
@@ -275,16 +311,17 @@ export async function parseHealthData(options: SourceParseOptions) {
 
     // VisionParser
     const visionParser = options.visionParser || {
-        parser: 'OpenAI',
-        model: 'gpt-4o',
-        apiKey: process.env.OPENAI_API as string
+        parser: 'Ollama',
+        model: 'qwen3:8b',
+        apiKey: '',
+        apiUrl: process.env.OLLAMA_API_URL || 'http://localhost:11434'
     }
 
     // Document Parser
     const documentParser = options.documentParser || {
-        parser: 'Upstage',
+        parser: 'Docling',
         model: 'document-parse',
-        apiKey: process.env.UPSTAGE_API_KEY as string
+        apiKey: ''
     }
 
     // prepare images
@@ -322,7 +359,14 @@ export async function parseHealthData(options: SourceParseOptions) {
     const mergedTestResult: { [key: string]: any } = {}
     const mergedPageResult: { [key: string]: { page: number } | null } = {}
 
-    for (const key of HealthCheckupSchema.shape.test_result.keyof().options) {
+    // Get all keys that actually exist in any of the result dictionaries
+    const allResultKeys = new Set([
+        ...Object.keys(resultDictTotal || {}),
+        ...Object.keys(resultDictText || {}),
+        ...Object.keys(resultDictImage || {})
+    ]);
+    
+    for (const key of Array.from(allResultKeys)) {
         const valueTotal =
             resultDictTotal.hasOwnProperty(key) &&
             resultDictTotal[key] !== null &&
@@ -371,10 +415,14 @@ export async function parseHealthData(options: SourceParseOptions) {
         }
     }
 
-    const healthCheckup = HealthCheckupSchema.parse({
-        ...resultTotal,
+    // Create the final health checkup object without strict schema validation
+    // to preserve Polish test result names that don't match the English schema
+    const healthCheckup = {
+        date: resultTotal.date || "",
+        name: resultTotal.name || "",
         test_result: mergedTestResult
-    })
+    } as HealthCheckupType
 
+    console.log('FINAL RETURN DATA:', JSON.stringify({data: [healthCheckup], pages: [mergedPageResult]}, null, 2));
     return {data: [healthCheckup], pages: [mergedPageResult], ocrResults: [ocrResults]}
 }

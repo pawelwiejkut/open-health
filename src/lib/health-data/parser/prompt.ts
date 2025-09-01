@@ -1,4 +1,5 @@
 import {BaseMessagePromptTemplateLike} from "@langchain/core/prompts";
+import { getAdaptivePrompt, getMultilingualPrompt } from "./multilingual-prompts";
 
 export interface MessagePayload {
     context?: string;
@@ -87,5 +88,30 @@ export function getParsePrompt({excludeImage, excludeText}: {
         return prompts.onlyImage
     } else {
         throw new Error('Invalid prompt type')
+    }
+}
+
+/**
+ * Get universal multilingual parsing prompts
+ * Supports automatic language detection and adaptive prompts
+ */
+export function getUniversalPrompt(options: {
+    excludeImage: boolean,
+    excludeText: boolean,
+    textContent?: string
+}): {
+    systemPrompt: string;
+    userPrompt: string;
+    detectedLanguage: string;
+    confidence: number;
+} {
+    const { excludeImage, excludeText, textContent = '' } = options;
+    
+    // Use adaptive prompt with language detection if text content is available
+    if (textContent.trim()) {
+        return getAdaptivePrompt(textContent, { excludeImage, excludeText });
+    } else {
+        // Fallback to English prompts
+        return getMultilingualPrompt({ excludeImage, excludeText, detectedLanguage: 'en' });
     }
 }

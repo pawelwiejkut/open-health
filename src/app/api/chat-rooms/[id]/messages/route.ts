@@ -90,9 +90,24 @@ export async function POST(
 
     let apiKey: string
     if (currentDeploymentEnv === 'local') {
-        apiKey = decrypt(llmProvider.apiKey)
+        // Ollama doesn't require an API key
+        if (llmProvider.providerId === 'ollama') {
+            apiKey = '';
+        } else {
+            if (!llmProvider.apiKey || llmProvider.apiKey.trim() === '') {
+                throw new Error(`API key not configured for LLM provider: ${llmProvider.providerId}`);
+            }
+            try {
+                apiKey = decrypt(llmProvider.apiKey);
+            } catch (error) {
+                throw new Error(`Failed to decrypt API key for provider ${llmProvider.providerId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+        }
     } else if (currentDeploymentEnv === 'cloud') {
         switch (llmProvider.providerId) {
+            case 'ollama':
+                apiKey = '';
+                break;
             case 'openai':
                 apiKey = process.env.OPENAI_API_KEY as string
                 break;

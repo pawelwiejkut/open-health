@@ -50,12 +50,31 @@ export function encrypt(text: string): string {
  * @returns The decrypted plaintext string.
  */
 export function decrypt(base64Data: string): string {
-    // Decode the Base64 string into a buffer
-    const combinedBuffer = Buffer.from(base64Data, 'base64');
+    if (!base64Data || typeof base64Data !== 'string') {
+        throw new Error('Invalid base64Data: must be a non-empty string');
+    }
+
+    let combinedBuffer: Buffer;
+    try {
+        // Decode the Base64 string into a buffer
+        combinedBuffer = Buffer.from(base64Data, 'base64');
+    } catch (error) {
+        throw new Error(`Failed to decode base64 data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    // Ensure the buffer is at least 17 bytes (16 for IV + 1 for data)
+    if (combinedBuffer.length < 17) {
+        throw new Error(`Invalid encrypted data: expected at least 17 bytes, got ${combinedBuffer.length}`);
+    }
 
     // Extract the IV (first 16 bytes) and ciphertext (remaining bytes)
     const iv = combinedBuffer.subarray(0, 16);
     const encryptedText = combinedBuffer.subarray(16);
+
+    // Validate IV length
+    if (iv.length !== 16) {
+        throw new Error(`Invalid IV length: expected 16 bytes, got ${iv.length}`);
+    }
 
     const decipher = crypto.createDecipheriv(algorithm, getEncryptionKey(), iv);
     const decryptedBuffer = Buffer.concat([

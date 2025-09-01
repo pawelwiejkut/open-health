@@ -1,11 +1,33 @@
 import {z} from "zod";
 
 /**
- * HealthCheckup
- * - date, name are optional
- * - test_result is required (an inline object of all fields, each an optional object)
+ * Universal HealthCheckup Schema
+ * - Supports any language and medical terminology
+ * - Uses flexible test_result structure for international compatibility
  */
 export const HealthCheckupSchema = z.object({
+    date: z.string().optional().nullable().describe("Examination date (any format)"),
+    name: z.string().optional().nullable().describe("Patient name"),
+    test_result: z
+        .record(
+            z.string(), // Test name in any language
+            z.object({
+                value: z.string().optional().nullable().describe("Test result value"),
+                unit: z.string().optional().nullable().describe("Unit of measurement"),
+                reference: z.string().optional().nullable().describe("Reference range"),
+                category: z.string().optional().nullable().describe("Test category"),
+                abnormal: z.boolean().optional().nullable().describe("Whether result is abnormal"),
+                notes: z.string().optional().nullable().describe("Additional notes")
+            }).optional().nullable()
+        )
+        .describe("Medical test results in any language")
+});
+
+/**
+ * Legacy schema for backward compatibility
+ * Keep the old structure but make it more flexible
+ */
+export const LegacyHealthCheckupSchema = z.object({
     date: z.string().optional().nullable().describe("Examination date (yyyy-mm-dd)"),
     name: z.string().optional().nullable().describe("Name"),
     test_result: z
@@ -2508,7 +2530,8 @@ export const HealthCheckupSchema = z.object({
                 .optional().nullable()
                 .describe("Sedimentation rate (Westergren method)"),
         })
-        .describe("Test results"),
+        .describe("Legacy test results"),
 });
 
 export type HealthCheckupType = z.infer<typeof HealthCheckupSchema>;
+export type LegacyHealthCheckupType = z.infer<typeof LegacyHealthCheckupSchema>;

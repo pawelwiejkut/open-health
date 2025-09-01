@@ -141,13 +141,24 @@ export async function POST(
             });
 
             // Process file
+            const finalVisionParserApiUrl = visionParserApiUrl ? 
+                (visionParserApiUrl as string) : 
+                process.env.OLLAMA_API_URL || 'http://localhost:11434'
+            
+            console.log('Vision parser config:', {
+                parser: visionParser,
+                model: visionParserModel,
+                apiUrl: visionParserApiUrl,
+                finalApiUrl: finalVisionParserApiUrl
+            })
+            
             const {data, pages, ocrResults} = await parseHealthData({
                 file: filePath as string,
                 visionParser: visionParser ? {
                     parser: visionParser as string,
                     model: visionParserModel as string,
                     apiKey: visionParserApiKey as string,
-                    apiUrl: visionParserApiUrl ? visionParserApiUrl as string : undefined
+                    apiUrl: finalVisionParserApiUrl
                 } : undefined,
                 documentParser: documentParser ? {
                     parser: documentParser as string,
