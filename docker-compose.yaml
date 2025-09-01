@@ -9,11 +9,17 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "15432:5432" # changed to avoid host port 5432 conflict
 
   docling-serve:
     image: ghcr.io/ds4sd/docling-serve:latest
     restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      - DOCLING_DOWNLOAD_MODELS=true
+    mem_limit: 4g
+    shm_size: 1g
 
   app:
     build:
