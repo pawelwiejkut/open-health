@@ -2,6 +2,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars */
 'use client';
 
+// Polyfill for Promise.withResolvers (required for Node.js < 22)
+if (!Promise.withResolvers) {
+  // Provide a typed polyfill compatible with TS PromiseWithResolvers
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Promise.withResolvers = function <T>(): PromiseWithResolvers<T> {
+    let resolve!: (value: T | PromiseLike<T>) => void;
+    let reject!: (reason?: any) => void;
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  } as typeof Promise.withResolvers;
+}
+
 import {Document, Page, pdfjs} from 'react-pdf';
 import React, {ChangeEvent, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Activity, ChevronLeft, ChevronRight, FileText, Loader2, Plus, Trash2, User} from 'lucide-react';
@@ -923,16 +938,145 @@ export default function SourceAddScreen() {
     const [formData, setFormData] = useState<Record<string, any>>({});
     const [isOpen, setIsOpen] = useState(true);
 
-    // Vision Parser
-    const [visionParser, setVisionParser] = useState<{ value: string; label: string }>()
-    const [visionParserModel, setVisionParserModel] = useState<{ value: string; label: string }>()
-    const [visionParserApiKey, setVisionParserApiKey] = useState<string>('')
-    const [visionParserApiUrl, setVisionParserApiUrl] = useState<string>('')
+    // Vision Parser - with localStorage persistence
+    const [visionParser, setVisionParserState] = useState<{ value: string; label: string }>()
+    const [visionParserModel, setVisionParserModelState] = useState<{ value: string; label: string }>()
+    const [visionParserApiKey, setVisionParserApiKeyState] = useState<string>('')
+    const [visionParserApiUrl, setVisionParserApiUrlState] = useState<string>(
+        process.env.NEXT_PUBLIC_OLLAMA_API_URL || process.env.OLLAMA_API_URL || 'http://localhost:11434'
+    )
 
-    // Document Parser
-    const [documentParser, setDocumentParser] = useState<{ value: string; label: string }>()
-    const [documentParserModel, setDocumentParserModel] = useState<{ value: string; label: string }>()
-    const [documentParserApiKey, setDocumentParserApiKey] = useState<string>('')
+    // Document Parser - with localStorage persistence
+    const [documentParser, setDocumentParserState] = useState<{ value: string; label: string }>()
+    const [documentParserModel, setDocumentParserModelState] = useState<{ value: string; label: string }>()
+    const [documentParserApiKey, setDocumentParserApiKeyState] = useState<string>('')
+
+    // Wrapper functions to save to localStorage
+    const setVisionParser = (value: { value: string; label: string } | undefined) => {
+        setVisionParserState(value)
+        if (typeof window !== 'undefined') {
+            if (value) {
+                localStorage.setItem('visionParser', JSON.stringify(value))
+            } else {
+                localStorage.removeItem('visionParser')
+            }
+        }
+    }
+
+    const setVisionParserModel = (value: { value: string; label: string } | undefined) => {
+        setVisionParserModelState(value)
+        if (typeof window !== 'undefined') {
+            if (value) {
+                localStorage.setItem('visionParserModel', JSON.stringify(value))
+            } else {
+                localStorage.removeItem('visionParserModel')
+            }
+        }
+    }
+
+    const setVisionParserApiKey = (value: string) => {
+        setVisionParserApiKeyState(value)
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('visionParserApiKey', value)
+        }
+    }
+
+    const setVisionParserApiUrl = (value: string) => {
+        setVisionParserApiUrlState(value)
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('visionParserApiUrl', value)
+        }
+    }
+
+    const setDocumentParser = (value: { value: string; label: string } | undefined) => {
+        setDocumentParserState(value)
+        if (typeof window !== 'undefined') {
+            if (value) {
+                localStorage.setItem('documentParser', JSON.stringify(value))
+            } else {
+                localStorage.removeItem('documentParser')
+            }
+        }
+    }
+
+    const setDocumentParserModel = (value: { value: string; label: string } | undefined) => {
+        setDocumentParserModelState(value)
+        if (typeof window !== 'undefined') {
+            if (value) {
+                localStorage.setItem('documentParserModel', JSON.stringify(value))
+            } else {
+                localStorage.removeItem('documentParserModel')
+            }
+        }
+    }
+
+    const setDocumentParserApiKey = (value: string) => {
+        setDocumentParserApiKeyState(value)
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('documentParserApiKey', value)
+        }
+    }
+
+    // Load from localStorage on component mount
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+
+        const savedVisionParser = localStorage.getItem('visionParser')
+        if (savedVisionParser) {
+            try {
+                setVisionParserState(JSON.parse(savedVisionParser))
+            } catch (e) {
+                console.warn('Failed to parse visionParser from localStorage')
+            }
+        }
+
+        const savedVisionParserModel = localStorage.getItem('visionParserModel')
+        if (savedVisionParserModel) {
+            try {
+                setVisionParserModelState(JSON.parse(savedVisionParserModel))
+            } catch (e) {
+                console.warn('Failed to parse visionParserModel from localStorage')
+            }
+        }
+
+        const savedVisionParserApiKey = localStorage.getItem('visionParserApiKey')
+        if (savedVisionParserApiKey) {
+            setVisionParserApiKeyState(savedVisionParserApiKey)
+        }
+
+        const savedVisionParserApiUrl = localStorage.getItem('visionParserApiUrl')
+        if (savedVisionParserApiUrl) {
+            setVisionParserApiUrlState(savedVisionParserApiUrl)
+        } else {
+            // Set default if nothing saved
+            const defaultUrl = process.env.NEXT_PUBLIC_OLLAMA_API_URL || process.env.OLLAMA_API_URL || 'http://localhost:11434'
+            localStorage.setItem('visionParserApiUrl', defaultUrl)
+            setVisionParserApiUrlState(defaultUrl)
+        }
+
+        const savedDocumentParser = localStorage.getItem('documentParser')
+        if (savedDocumentParser) {
+            try {
+                setDocumentParserState(JSON.parse(savedDocumentParser))
+            } catch (e) {
+                console.warn('Failed to parse documentParser from localStorage')
+            }
+        }
+
+        const savedDocumentParserModel = localStorage.getItem('documentParserModel')
+        if (savedDocumentParserModel) {
+            try {
+                setDocumentParserModelState(JSON.parse(savedDocumentParserModel))
+            } catch (e) {
+                console.warn('Failed to parse documentParserModel from localStorage')
+            }
+        }
+
+        const savedDocumentParserApiKey = localStorage.getItem('documentParserApiKey')
+        if (savedDocumentParserApiKey) {
+            setDocumentParserApiKeyState(savedDocumentParserApiKey)
+        }
+    }, [])
 
     const {data: healthDataList, mutate} = useSWR<HealthDataListResponse>(
         '/api/health-data',
@@ -1307,7 +1451,7 @@ export default function SourceAddScreen() {
                                                 />
 
                                                 <ConditionalDeploymentEnv env={['local']}>
-                                                    {visionDataList?.visions?.find(v => v.name === visionParser?.value)?.apiKeyRequired && (
+                                                    {visionParserApiKeyRequired && (
                                                         <div className="space-y-2">
                                                             <label className="text-sm font-medium">{t('apiKey')}</label>
                                                             <input
@@ -1322,7 +1466,7 @@ export default function SourceAddScreen() {
                                                         </div>
                                                     )}
 
-                                                    {visionDataList?.visions?.find(v => v.name === visionParser?.value)?.apiUrlRequired && (
+                                                    {visionParserApiUrlRequired && (
                                                         <div className="space-y-2">
                                                             <input
                                                                 aria-autocomplete={'none'}
@@ -1390,7 +1534,7 @@ export default function SourceAddScreen() {
                                                 />
 
                                                 <ConditionalDeploymentEnv env={['local']}>
-                                                    {documentDataList?.documents?.find(v => v.name === documentParser?.value)?.apiKeyRequired && (
+                                                    {documentParserApiKeyRequired && (
                                                         <div className="space-y-2">
                                                             <label className="text-sm font-medium">{t('apiKey')}</label>
                                                             <input

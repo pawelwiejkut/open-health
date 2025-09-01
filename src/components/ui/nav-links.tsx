@@ -4,7 +4,7 @@ export function NavLinks() {
     return (
         <div className="hidden items-center gap-4 mr-4 md:flex">
             <a
-                href="https://qna.open-health.me/"
+                href={process.env.NEXT_PUBLIC_CLINIC_URL || 'https://qna.open-health.me/'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="relative flex items-center text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors font-medium"
@@ -12,7 +12,7 @@ export function NavLinks() {
                 Clinic
             </a>
             <a
-                href="https://question.open-health.me/"
+                href={process.env.NEXT_PUBLIC_QNA_URL || 'https://question.open-health.me/'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="relative flex items-center text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors font-medium"
@@ -21,7 +21,7 @@ export function NavLinks() {
                 <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full leading-none">NEW</span>
             </a>
             <a
-                href="https://tally.so/r/3xl2GE"
+                href={process.env.NEXT_PUBLIC_FEEDBACK_URL || 'https://tally.so/r/3xl2GE'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors font-medium"
@@ -29,7 +29,7 @@ export function NavLinks() {
                 Feedback
             </a>
             <a
-                href="https://github.com/OpenHealthForAll/open-health"
+                href={process.env.NEXT_PUBLIC_GITHUB_URL || 'https://github.com/OpenHealthForAll/open-health'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors font-medium"
@@ -37,7 +37,7 @@ export function NavLinks() {
                 Github
             </a>
             <a
-                href="https://www.reddit.com/r/AIDoctor/"
+                href={process.env.NEXT_PUBLIC_REDDIT_URL || 'https://www.reddit.com/r/AIDoctor/'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors font-medium"
@@ -45,7 +45,7 @@ export function NavLinks() {
                 Reddit
             </a>
             <a
-                href="https://discord.gg/B9K654g4wf"
+                href={process.env.NEXT_PUBLIC_DISCORD_URL || 'https://discord.gg/B9K654g4wf'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors font-medium"

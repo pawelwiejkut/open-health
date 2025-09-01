@@ -68,7 +68,8 @@ export async function GET(
         })
     } else if (llmProvider.providerId === 'google') {
         if (currentDeploymentEnv === 'cloud') apiKey = process.env.GOOGLE_API_KEY as string
-        const url = new URL('https://generativelanguage.googleapis.com/v1beta/models');
+        const googleApiBase = process.env.GOOGLE_API_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta'
+        const url = new URL(`${googleApiBase.replace(/\/$/, '')}/models`);
         url.searchParams.append('key', apiKey);
         url.searchParams.append('pageSize', '1000');
         const response = await fetch(url.toString())

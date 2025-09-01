@@ -42,7 +42,7 @@ export class UpstageDocumentParser extends BaseDocumentParser {
         formData.append("model", "ocr-2.2.1");
 
         const apiKey = currentDeploymentEnv === 'cloud' ? process.env.UPSTAGE_API_KEY : options.apiKey
-        const response = await fetch('https://api.upstage.ai/v1/document-ai/ocr', {
+        const response = await fetch(`${process.env.UPSTAGE_API_BASE_URL || 'https://api.upstage.ai'}/v1/document-ai/ocr`, {
             method: 'POST',
             body: formData,
             headers: {Authorization: `Bearer ${apiKey}`}
@@ -63,7 +63,8 @@ export class UpstageDocumentParser extends BaseDocumentParser {
         formData.append("model", "document-parse");
 
         const apiKey = currentDeploymentEnv === 'cloud' ? process.env.UPSTAGE_API_KEY : options.apiKey
-        const response = await fetch('https://api.upstage.ai/v1/document-ai/document-parse', {
+        const upstageBase = process.env.UPSTAGE_API_BASE_URL || 'https://api.upstage.ai'
+        const response = await fetch(`${upstageBase.replace(/\/$/, '')}/v1/document-ai/document-parse`, {
             method: 'POST',
             body: formData,
             headers: {Authorization: `Bearer ${apiKey}`}

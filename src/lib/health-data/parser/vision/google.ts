@@ -3,7 +3,7 @@ import {ChatGoogleGenerativeAI} from "@langchain/google-genai";
 import {HealthCheckupSchema} from "@/lib/health-data/parser/schema";
 import {ChatPromptTemplate} from "@langchain/core/prompts";
 import {z} from "zod";
-import {processBatchWithConcurrency} from "@/lib/health-data/parser/util";
+// import {processBatchWithConcurrency} from "@/lib/health-data/parser/util";
 import {currentDeploymentEnv} from "@/lib/current-deployment-env";
 
 type ZodTypeAny = z.ZodTypeAny;
@@ -55,20 +55,16 @@ export class GoogleVisionParser extends BaseVisionParser {
             .withRetry({stopAfterAttempt: 3})
             .invoke(options.input)
 
-        // parse the test results in chunks of 33 keys
-        const chunkedKeys = this.chunkArray(Object.keys(HealthCheckupSchema.shape.test_result.shape), 33);
-        const chunks = await this.requestChunks(chunkedKeys);
-        const results = await processBatchWithConcurrency(
-            chunks,
-            async (chunk) => {
-                return messages.pipe(llm.withStructuredOutput(chunk, {method: 'functionCalling'}))
-                    .withRetry({stopAfterAttempt: 3})
-                    .invoke(options.input);
-            },
-            5
-        )
+        // parse the test results as a flexible record
+        const TestResultEnvelope = this.removeNullable(z.object({
+            test_result: HealthCheckupSchema.shape.test_result
+        }));
+        const { test_result } = await messages
+            .pipe(llm.withStructuredOutput(TestResultEnvelope, { method: 'functionCalling' }))
+            .withRetry({ stopAfterAttempt: 3 })
+            .invoke(options.input);
 
-        return HealthCheckupSchema.parse({date, name, test_result: this.mergeResults(results)})
+        return HealthCheckupSchema.parse({ date, name, test_result })
     }
 
     private chunkArray<T>(array: T[], size: number): T[][] {
@@ -79,18 +75,7 @@ export class GoogleVisionParser extends BaseVisionParser {
         return result;
     };
 
-    private async requestChunks(chunks: string[][]) {
-        const testResultSchema = HealthCheckupSchema.shape.test_result;
-        return await Promise.all(chunks.map(async (chunk) => {
-            return z.object(
-                chunk.reduce((acc, key) => {
-                    acc[key] = this.removeNullable(testResultSchema.shape[key as keyof typeof testResultSchema.shape])
-                    return acc;
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                }, {} as Record<string, any>)
-            );
-        }));
-    };
+    // requestChunks no longer needed with flexible record parsing
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private mergeResults(results: any[]) {
