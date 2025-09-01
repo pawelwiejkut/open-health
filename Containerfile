@@ -1,7 +1,11 @@
 FROM node:lts-alpine
 LABEL authors="OpenHealth"
 
-RUN apk add -U graphicsmagick
+# Required for PDF -> image conversion used by pdf2pic
+# GraphicsMagick handles image ops; Ghostscript renders PDF pages.
+RUN apk add -U --no-cache \
+    graphicsmagick \
+    ghostscript
 
 WORKDIR /app
 

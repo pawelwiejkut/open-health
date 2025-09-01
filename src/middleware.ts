@@ -1,3 +1,4 @@
+import {NextResponse} from 'next/server'
 import {auth as middleware} from '@/auth';
 
 const signInPathName = '/login';
@@ -8,10 +9,10 @@ export default middleware((req) => {
     const isAuthenticated = !!req.auth;
 
     // Prevent login redirect loop
-    if (nextUrl.pathname === signInPathName) return null;
+    if (nextUrl.pathname === signInPathName) return NextResponse.next();
     if (!isAuthenticated) return Response.redirect(new URL(signInPathName, nextUrl));
 
-    return null;
+    return NextResponse.next();
 })
 
 export const config = {

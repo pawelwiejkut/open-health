@@ -38,7 +38,7 @@ interface InferenceOptions {
     excludeImage: boolean,
     excludeText: boolean,
     visionParser: VisionParserOptions
-    documentParser: DocumentParserOptions
+    documentParser?: DocumentParserOptions
 }
 
 async function documentOCR({document, documentParser}: { document: string, documentParser: DocumentParserOptions }) {
@@ -87,16 +87,24 @@ async function inference(inferenceOptions: InferenceOptions) {
         documentParser: documentParserOptions
     } = inferenceOptions
 
+    if (!excludeText && !documentParserOptions) {
+        throw new Error('Document parser is required when text extraction is enabled');
+    }
+
     // Extract text data if not excluding text
-    const pageDataList: { page_content: string }[] | undefined = !excludeText ? await processBatchWithConcurrency(
-        imagePaths,
-        async (path) => {
-            const {content} = await documentParse({document: path, documentParser: documentParserOptions})
-            const {markdown} = content
-            return {page_content: markdown}
-        },
-        2
-    ) : undefined
+    let pageDataList: { page_content: string }[] | undefined = undefined
+    if (!excludeText) {
+        // documentParserOptions is guaranteed by guard above
+        pageDataList = await processBatchWithConcurrency(
+            imagePaths,
+            async (path) => {
+                const {content} = await documentParse({document: path, documentParser: documentParserOptions as DocumentParserOptions})
+                const {markdown} = content
+                return {page_content: markdown}
+            },
+            2
+        )
+    }
 
     // Extract image data if not excluding images
     const imageDataList: string[] = !excludeImage ? await processBatchWithConcurrency(
@@ -317,15 +325,36 @@ export async function parseHealthData(options: SourceParseOptions) {
         apiUrl: process.env.OLLAMA_API_URL || 'http://localhost:11434'
     }
 
-    // Document Parser
-    const documentParser = options.documentParser || {
-        parser: 'Docling',
-        model: 'document-parse',
-        apiKey: ''
-    }
+    // Document Parser (optional)
+    // In local/dev environments Docling may not be running outside Docker.
+    // If not explicitly provided, treat document parsing as optional and
+    // fall back to vision-only inference.
+    const documentParser = options.documentParser
+        ? options.documentParser
+        : undefined
 
     // prepare images
     const imagePaths = await documentToImages({file: filePath})
+
+    // If no documentParser available, do a vision-only fallback to avoid
+    // hard dependency on Docling in local/dev.
+    if (!documentParser) {
+        const {finalHealthCheckup, mergedTestResultPage} = await inference({
+            imagePaths,
+            excludeImage: false,
+            excludeText: true,
+            visionParser
+        })
+
+        const healthCheckup = {
+            date: finalHealthCheckup.date || "",
+            name: finalHealthCheckup.name || "",
+            test_result: finalHealthCheckup.test_result || {}
+        } as HealthCheckupType
+
+        console.log('FINAL RETURN DATA (vision-only):', JSON.stringify({data: [healthCheckup], pages: [mergedTestResultPage]}, null, 2));
+        return {data: [healthCheckup], pages: [mergedTestResultPage], ocrResults: []}
+    }
 
     // prepare ocr results
     const ocrResults = await documentOCR({
