@@ -425,6 +425,16 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
     };
     const [dataPerPage, setDataPerPage] = useState(sourceDataPerPage)
 
+    // Reset preview state when switching to a different source
+    useEffect(() => {
+        setPage(1)
+        setFocusedItem(null)
+        setInputFocusStates({})
+        setUserBloodTestResults(JSON.parse(JSON.stringify(healthData.data || {test_result: {}})))
+        setUserBloodTestResultsPage((healthData?.metadata as any)?.dataPerPage || null)
+        setDataPerPage((healthData?.metadata as any)?.dataPerPage)
+    }, [healthData?.id])
+
     const allInputsBlurred = Object.values(inputFocusStates).every((isFocused) => !isFocused);
 
     const handleFocus = (name: string) => {
