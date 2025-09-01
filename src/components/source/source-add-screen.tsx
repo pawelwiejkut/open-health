@@ -937,6 +937,8 @@ export default function SourceAddScreen() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [formData, setFormData] = useState<Record<string, any>>({});
     const [isOpen, setIsOpen] = useState(true);
+    const [doclingOk, setDoclingOk] = useState<boolean | null>(null)
+    const [checkingDocling, setCheckingDocling] = useState(false)
 
     // Vision Parser - with localStorage persistence
     const [visionParser, setVisionParserState] = useState<{ value: string; label: string }>()
@@ -1017,6 +1019,19 @@ export default function SourceAddScreen() {
         }
     }
 
+    const checkDocling = useCallback(async () => {
+        try {
+            setCheckingDocling(true)
+            const res = await fetch('/api/health/docling', {cache: 'no-store'})
+            const json = await res.json()
+            setDoclingOk(!!json.ok)
+        } catch (e) {
+            setDoclingOk(false)
+        } finally {
+            setCheckingDocling(false)
+        }
+    }, [])
+
     // Load from localStorage on component mount
     useEffect(() => {
         if (typeof window === 'undefined') return
@@ -1076,6 +1091,8 @@ export default function SourceAddScreen() {
         if (savedDocumentParserApiKey) {
             setDocumentParserApiKeyState(savedDocumentParserApiKey)
         }
+        // initial docling check
+        checkDocling().then()
     }, [])
 
     const {data: healthDataList, mutate} = useSWR<HealthDataListResponse>(
@@ -1406,6 +1423,20 @@ export default function SourceAddScreen() {
                                     <p className="text-sm text-muted-foreground">
                                         {t('parsingSettingsDescription')}
                                     </p>
+                                    <ConditionalDeploymentEnv env={['local']}>
+                                        {doclingOk === false && (
+                                            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+                                                Docling (OCR) jest niedostępny. Użyjemy trybu vision-only bez OCR.
+                                                <button
+                                                    className="ml-2 underline"
+                                                    onClick={checkDocling}
+                                                    disabled={checkingDocling}
+                                                >
+                                                    {checkingDocling ? 'Sprawdzam…' : 'Spróbuj ponownie'}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </ConditionalDeploymentEnv>
 
                                     <div className="space-y-4">
                                         <div>
