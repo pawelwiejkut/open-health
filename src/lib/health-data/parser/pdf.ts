@@ -389,8 +389,8 @@ export async function parseHealthData(options: SourceParseOptions) {
             3
         )
 
-        // Merge the results
-        const baseInferenceOptions = {imagePaths, visionParser, documentParser}
+    // Merge the results
+    const baseInferenceOptions = {imagePaths, visionParser, documentParser}
         const [
             {finalHealthCheckup: resultTotal, mergedTestResultPage: resultTotalPages},
             {finalHealthCheckup: resultText, mergedTestResultPage: resultTextPages},
@@ -464,6 +464,51 @@ export async function parseHealthData(options: SourceParseOptions) {
         }
     }
 
+    // Filter hallucinations using OCR when available: keep only entries
+    // whose value (or normalized variant) appears in OCR text on the same page.
+    try {
+        const ocrTextByPage: string[] = []
+        const ocrPages: any[] = (ocrResults as any)?.pages || []
+        if (Array.isArray(ocrPages) && ocrPages.length > 0) {
+            for (const p of ocrPages) {
+                if (typeof p.text === 'string') ocrTextByPage.push(p.text)
+                else if (Array.isArray(p.words)) ocrTextByPage.push(p.words.map((w: any) => w.text).join(' '))
+                else ocrTextByPage.push('')
+            }
+
+            const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
+            const numVariants = (s: string) => {
+                const v = [s]
+                if (s.includes(',')) v.push(s.replace(/,/g, '.'))
+                if (s.includes('.')) v.push(s.replace(/\./g, ','))
+                return Array.from(new Set(v))
+            }
+
+            for (const key of Object.keys(mergedTestResult)) {
+                const entry = mergedTestResult[key]
+                const page = mergedPageResult[key]?.page || 1
+                const idx = page - 1
+                const text = normalize(ocrTextByPage[idx] || '')
+                const value = (entry && typeof entry.value === 'string') ? entry.value : ''
+                const candidates = value ? numVariants(value) : []
+                let found = false
+                for (const c of candidates) {
+                    if (text.includes(normalize(c))) { found = true; break }
+                }
+                // if numeric value not found, try key presence as fallback
+                if (!found && typeof key === 'string' && key.length > 1) {
+                    if (text.includes(normalize(key))) found = true
+                }
+                if (!found) {
+                    delete mergedTestResult[key]
+                    delete mergedPageResult[key]
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('OCR filter skipped due to error:', e)
+    }
+
     // Create the final health checkup object without strict schema validation
     // to preserve Polish test result names that don't match the English schema
     const healthCheckup = {
@@ -472,8 +517,8 @@ export async function parseHealthData(options: SourceParseOptions) {
         test_result: mergedTestResult
     } as HealthCheckupType
 
-        console.log('FINAL RETURN DATA:', JSON.stringify({data: [healthCheckup], pages: [mergedPageResult]}, null, 2));
-        return {data: [healthCheckup], pages: [mergedPageResult], ocrResults: [ocrResults]}
+    console.log('FINAL RETURN DATA:', JSON.stringify({data: [healthCheckup], pages: [mergedPageResult]}, null, 2));
+    return {data: [healthCheckup], pages: [mergedPageResult], ocrResults: [ocrResults]}
     } catch (error) {
         console.warn('Document parser unavailable or failed, falling back to vision-only:', error)
         const {finalHealthCheckup, mergedTestResultPage} = await inference({

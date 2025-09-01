@@ -958,6 +958,8 @@ export default function SourceAddScreen() {
     const [isOpen, setIsOpen] = useState(true);
     const [doclingOk, setDoclingOk] = useState<boolean | null>(null)
     const [checkingDocling, setCheckingDocling] = useState(false)
+    const [uploadingCount, setUploadingCount] = useState(0)
+    const [uploadedCount, setUploadedCount] = useState(0)
 
     // Vision Parser - with localStorage persistence
     const [visionParser, setVisionParserState] = useState<{ value: string; label: string }>()
@@ -1144,6 +1146,8 @@ export default function SourceAddScreen() {
 
         try {
             const files = Array.from(e.target.files);
+            setUploadingCount(files.length)
+            setUploadedCount(0)
 
             for (const file of files) {
                 const id = cuid();
@@ -1194,6 +1198,7 @@ export default function SourceAddScreen() {
 
                 const data: HealthDataCreateResponse = await response.json();
                 console.log('File upload successful:', {fileName: file.name, response: data});
+                setUploadedCount((c) => Math.min(c + 1, files.length))
 
                 // Start polling for parsing status
                 if (data.id) {
@@ -1230,6 +1235,9 @@ export default function SourceAddScreen() {
             }
         } catch (error) {
             console.error('Failed to upload files:', error);
+        }
+        finally {
+            setTimeout(() => { setUploadingCount(0); setUploadedCount(0) }, 1000)
         }
     };
 
@@ -1390,6 +1398,17 @@ export default function SourceAddScreen() {
             <div className="flex flex-1 overflow-hidden">
                 <div className="w-80 border-r flex flex-col">
                     <div className="p-4 flex flex-col gap-4">
+                        {uploadingCount > 0 && (
+                            <div className="w-full">
+                                <div className="flex justify-between text-xs mb-1">
+                                    <span>Przetwarzanie</span>
+                                    <span>{uploadedCount}/{uploadingCount}</span>
+                                </div>
+                                <div className="h-2 bg-gray-200 rounded">
+                                    <div className="h-2 bg-blue-500 rounded" style={{width: `${Math.round((uploadedCount/uploadingCount)*100)}%`}}/>
+                                </div>
+                            </div>
+                        )}
                         <AddSourceDialog
                             isSetUpVisionParser={visionParser !== undefined && visionParserModel !== undefined && (!visionParserApiKeyRequired || visionParserApiKey.length > 0)}
                             isSetUpDocumentParser={documentParser !== undefined && documentParserModel !== undefined && (!documentParserApiKeyRequired || documentParserApiKey.length > 0)}

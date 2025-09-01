@@ -75,6 +75,8 @@ export class OllamaVisionParser extends BaseVisionParser {
             excludeImage,
             excludeText
         });
+        // Add stricter constraints to avoid hallucination
+        const strictSystem = `${adaptivePrompt.systemPrompt}\n\nStrict constraints:\n- Only include tests explicitly present in the document.\n- Do not guess or add fields that are not visible.\n- Prefer numeric values exactly as shown (preserve decimal separators).\n- If uncertain, omit the field.`
         
         console.log(`Detected language: ${adaptivePrompt.detectedLanguage} (confidence: ${adaptivePrompt.confidence})`);
         
@@ -91,7 +93,7 @@ export class OllamaVisionParser extends BaseVisionParser {
             if (options.input.image_data) {
                 // For image input, use the image directly
                 const messages = [
-                    { role: "system", content: adaptivePrompt.systemPrompt },
+                    { role: "system", content: strictSystem },
                     { role: "user", content: [
                         { type: "text", text: userPrompt },
                         { type: "image_url", image_url: { url: options.input.image_data } }
@@ -101,7 +103,7 @@ export class OllamaVisionParser extends BaseVisionParser {
             } else {
                 // For text-only input
                 const messages = [
-                    { role: "system", content: adaptivePrompt.systemPrompt },
+                    { role: "system", content: strictSystem },
                     { role: "user", content: userPrompt }
                 ];
                 result = await llm.invoke(messages);
