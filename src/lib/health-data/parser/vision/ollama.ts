@@ -109,25 +109,63 @@ export class OllamaVisionParser extends BaseVisionParser {
                 result = await llm.invoke(messages);
             }
             
-            const jsonContent = result.content.toString();
-            console.log('Raw Ollama response:', jsonContent);
-            
-            const parsed = JSON.parse(jsonContent);
+            const rawContent = result.content.toString();
+            console.log('Raw Ollama response:', rawContent);
+
+            const sanitize = (s: string) => {
+                // strip code fences
+                s = s.replace(/```json[\s\S]*?```/gi, (m) => m.replace(/```json|```/gi, ''))
+                s = s.replace(/```[\s\S]*?```/g, (m) => m.replace(/```/g, ''))
+                // remove control characters (except common whitespace) that break JSON
+                s = s.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ' ')
+                return s.trim()
+            }
+
+            const tryParse = (s: string) => {
+                try {
+                    return JSON.parse(s)
+                } catch {
+                    // attempt to extract the first {...} block
+                    const start = s.indexOf('{')
+                    const end = s.lastIndexOf('}')
+                    if (start !== -1 && end !== -1 && end > start) {
+                        return JSON.parse(s.slice(start, end + 1))
+                    }
+                    throw new Error('Failed to parse JSON from model output')
+                }
+            }
+
+            let parsed: unknown
+            try {
+                parsed = tryParse(rawContent)
+            } catch {
+                parsed = tryParse(sanitize(rawContent))
+            }
             console.log('Parsed JSON:', parsed);
-            
-            // For Ollama, preserve all test results regardless of schema validation
-            // Create a relaxed validation that keeps the original test_result structure
+
+            const pobj = (v: unknown): Record<string, unknown> => (typeof v === 'object' && v !== null) ? v as Record<string, unknown> : {}
+            const p = pobj(parsed)
+            const dateVal = typeof p['date'] === 'string' ? p['date'] as string : ''
+            const nameVal = typeof p['name'] === 'string' ? p['name'] as string : ''
+            const trVal = (() => {
+                const v = p['test_result']
+                return (typeof v === 'object' && v !== null) ? v as Record<string, unknown> : {}
+            })()
+
+            // For Ollama, preserve structure but keep it relaxed
             const relaxedHealthCheckup = {
-                date: parsed.date || "",
-                name: parsed.name || "",
-                test_result: parsed.test_result || {}
+                date: dateVal,
+                name: nameVal,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                test_result: trVal as any
             };
             
             console.log('Final result before return:', JSON.stringify(relaxedHealthCheckup, null, 2));
             return relaxedHealthCheckup as HealthCheckupType;
         } catch (error) {
             console.error('Error parsing Ollama response:', error);
-            throw error;
+            // Return minimal empty result to avoid failing the whole pipeline
+            return { date: "", name: "", test_result: {} } as HealthCheckupType;
         }
     }
 }
