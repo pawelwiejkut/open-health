@@ -1,7 +1,7 @@
 'use client'
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Menu, Send, Settings} from 'lucide-react';
+import {Menu, Send, Settings, Loader2} from 'lucide-react';
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import LogoutButton from "@/components/auth/logout-button";
@@ -34,6 +34,7 @@ export default function Screen(
     const [isJsonViewerOpen, setIsJsonViewerOpen] = useState(false);
     const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(!isMobile);
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(!isMobile);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     const {data, mutate} = useSWR<ChatMessageListResponse>(`/api/chat-rooms/${id}/messages`, async (url: string) => {
         const response = await fetch(url);
@@ -50,8 +51,9 @@ export default function Screen(
     const handleSendMessage = async () => {
         if (!inputText.trim()) return;
 
-        // Clear input
+        // Clear input & set generating state
         setInputText('');
+        setIsGenerating(true);
 
         const oldMessages = [...messages, {
             id: new Date().toISOString(),
@@ -71,32 +73,36 @@ export default function Screen(
         });
 
         // Read as a stream
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        const createdAt = new Date()
-        if (reader) {
-            let done = false;
-            while (!done) {
-                const {value, done: isDone} = await reader.read();
-                done = isDone;
-                const content = decoder.decode(value, {stream: !done});
-                for (const data of content.split('\n').filter(Boolean)) {
-                    const {content, error}: { content?: string, error?: string } = JSON.parse(data)
-                    if (error) {
-                        console.error('Error from LLM:', error);
-                        continue;
-                    }
-                    if (content) {
-                        await mutate({
-                            chatMessages: [
-                                ...oldMessages,
-                                {id: new Date().toISOString(), content: content, role: 'ASSISTANT', createdAt}
-                            ]
-                        }, {revalidate: false});
+        try {
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            const createdAt = new Date()
+            if (reader) {
+                let done = false;
+                while (!done) {
+                    const {value, done: isDone} = await reader.read();
+                    done = isDone;
+                    const content = decoder.decode(value, {stream: !done});
+                    for (const data of content.split('\n').filter(Boolean)) {
+                        const {content, error}: { content?: string, error?: string } = JSON.parse(data)
+                        if (error) {
+                            console.error('Error from LLM:', error);
+                            continue;
+                        }
+                        if (content) {
+                            await mutate({
+                                chatMessages: [
+                                    ...oldMessages,
+                                    {id: new Date().toISOString(), content: content, role: 'ASSISTANT', createdAt}
+                                ]
+                            }, {revalidate: false});
+                        }
                     }
                 }
+                await mutate();
             }
-            await mutate();
+        } finally {
+            setIsGenerating(false);
         }
     };
 
@@ -136,6 +142,15 @@ export default function Screen(
                         {messages.map((message, index) => (
                             <ChatMessage key={index} message={message}/>
                         ))}
+                        {isGenerating && (
+                            <div className="flex gap-2 bg-gray-50 p-2 rounded items-center">
+                                <img src="/favicon.ico" alt="Assistant" width={24} height={24} className="rounded-full" />
+                                <div className="text-sm text-gray-500 flex items-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>Assistant is thinking…</span>
+                                </div>
+                            </div>
+                        )}
                         <div ref={messagesEndRef}/>
                     </div>
                     <div className="mb-16 md:mb-0">
@@ -145,6 +160,7 @@ export default function Screen(
                                     placeholder={t('inputPlaceholder')}
                                     value={inputText}
                                     onChange={(e) => setInputText(e.target.value)}
+                                    disabled={isGenerating}
                                     onKeyPress={(e) => {
                                         if (e.key === 'Enter' && !e.shiftKey) {
                                             e.preventDefault();
@@ -152,8 +168,12 @@ export default function Screen(
                                         }
                                     }}
                                 />
-                                <Button onClick={handleSendMessage}>
-                                    <Send className="w-4 h-4"/>
+                                <Button onClick={handleSendMessage} disabled={isGenerating}>
+                                    {isGenerating ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Send className="w-4 h-4"/>
+                                    )}
                                 </Button>
                             </div>
                         </div>
