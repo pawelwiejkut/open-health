@@ -147,7 +147,7 @@ export default function Screen(
                                 <img src="/favicon.ico" alt="Assistant" width={24} height={24} className="rounded-full" />
                                 <div className="text-sm text-gray-500 flex items-center gap-2">
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    <span>Assistant is thinking…</span>
+                                    <span>{t('thinking')}</span>
                                 </div>
                             </div>
                         )}

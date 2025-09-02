@@ -2,7 +2,8 @@
   "HomePage": {
   },
   "Chat": {
-    "inputPlaceholder": "Type your message..."
+    "inputPlaceholder": "Type your message...",
+    "thinking": "Assistant is thinking…"
   },
   "Feedback": {
     "helpMessage": "Help OpenHealth solve health problems for you and many others",

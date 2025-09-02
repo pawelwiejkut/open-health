@@ -1,7 +1,8 @@
 {
   "HomePage": {},
   "Chat": {
-    "inputPlaceholder": "Napisz swoją wiadomość..."
+    "inputPlaceholder": "Napisz swoją wiadomość...",
+    "thinking": "Asystent myśli…"
   },
   "Feedback": {
     "helpMessage": "Pomóż OpenHealth rozwiązywać problemy zdrowotne dla Ciebie i innych",
@@ -188,4 +189,3 @@
     "healthSolver": {"message": "Powiedz o swoich problemach zdrowotnych"}
   }
 }
-
